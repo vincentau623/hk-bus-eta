@@ -19,6 +19,7 @@ function App() {
   const [selectedRouteStop, setSelectedRouteStop] = useState<Stop>();
   const [routeEta, setRouteEta] = useState<ETA[]>([]);
   const [etaResult, setEtaResult] = useState<ETA[]>([]);
+  const [selectedLang, setSelectedLang] = useState<string>("en");
 
   // When enter the page, fetch the route list and set the selected route to the first one
   useEffect(() => {
@@ -100,6 +101,14 @@ function App() {
     }
   }, [routeEta, selectedRoute, selectedRouteStop]);
 
+  const changeLanguage = () => {
+    if (selectedLang === "en") {
+      setSelectedLang("tc");
+    } else if (selectedLang === "tc") {
+      setSelectedLang("en");
+    }
+  };
+
   const displayETA = () => {
     return (
       <div>
@@ -137,13 +146,16 @@ function App() {
 
   return (
     <div>
-      <div style={{ textAlign: "left" }}>
+      <div style={{ display: "flex", justifyContent: "space-between" }}>
         <Button
           variant="outlined"
           startIcon={`⬅️`}
-          onClick={() => window.location.href = "https://vincentwcau.com/"}
+          onClick={() => (window.location.href = "https://vincentwcau.com/")}
         >
           Return to Main Page
+        </Button>
+        <Button variant="outlined" startIcon={`🔃`} onClick={changeLanguage}>
+          Change Stop Name Language (Current: {selectedLang})
         </Button>
       </div>
       <Stack spacing={2} style={{ paddingTop: "1em" }}>
@@ -162,7 +174,11 @@ function App() {
             id="auto-complete route"
             options={routeList}
             getOptionLabel={(option) =>
-              `${option.route} - ${option.orig_tc}->${option.dest_tc} (${option.bound}${option.service_type})`
+              `${option.route} - ${
+                selectedLang === "en" ? option.orig_en : option.orig_tc
+              }->${selectedLang === "en" ? option.dest_en : option.dest_tc} (${
+                option.bound
+              }${option.service_type})`
             }
             sx={{ width: "90vw" }}
             renderInput={(params) => <TextField {...params} label="Route" />}
@@ -179,7 +195,11 @@ function App() {
             }}
             id="auto-complete stop"
             options={routeStops}
-            getOptionLabel={(option) => `${option.seq} - ${option.name_tc}`}
+            getOptionLabel={(option) =>
+              `${option.seq} - ${
+                selectedLang === "en" ? option.name_en : option.name_tc
+              }`
+            }
             sx={{ width: "90vw" }}
             renderInput={(params) => <TextField {...params} label="Stop" />}
           />
