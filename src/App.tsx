@@ -137,6 +137,15 @@ function App() {
 
   return (
     <div>
+      <div style={{ textAlign: "left" }}>
+        <Button
+          variant="outlined"
+          startIcon={`⬅️`}
+          onClick={() => window.location.href = "https://vincentwcau.com/"}
+        >
+          Return to Main Page
+        </Button>
+      </div>
       <Stack spacing={2} style={{ paddingTop: "1em" }}>
         {routeList.length > 0 && selectedRoute && (
           <Autocomplete
