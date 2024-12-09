@@ -183,7 +183,7 @@ function App() {
                 option.bound
               }${option.service_type})`
             }
-            sx={{ width: "90vw" }}
+            sx={{ width: "100%" }}
             renderInput={(params) => <TextField {...params} label="Route" />}
           />
         )}
@@ -203,7 +203,7 @@ function App() {
                 selectedLang === "en" ? option.name_en : option.name_tc
               }`
             }
-            sx={{ width: "90vw" }}
+            sx={{ width: "100%" }}
             renderInput={(params) => <TextField {...params} label="Stop" />}
           />
         )}
