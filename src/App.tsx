@@ -8,7 +8,7 @@ import {
   Button,
   Typography,
 } from "@mui/material";
-import moment from "moment";
+import moment from "moment-timezone";
 import "./App.css";
 import { ETA, Route, RouteStop, Stop } from "./models/KMB";
 
@@ -115,10 +115,10 @@ function App() {
         {etaResult.length > 0 ? (
           etaResult.map((el) => {
             return (
-              <div>
+              <div key={el.eta_seq}>
                 {el.eta ? (
                   <div>
-                    {moment(el.eta).format("HH:mm:ss")} (
+                    {moment(el.eta).tz("Asia/Hong_Kong").format("HH:mm:ss")} (
                     {moment(el.eta).diff(moment(), "minutes")})
                   </div>
                 ) : (
@@ -140,6 +140,9 @@ function App() {
         >
           Refresh
         </Button>
+        <Typography variant="caption" gutterBottom sx={{ display: "block" }}>
+          *The ETA is based on UTC+8.
+        </Typography>
       </div>
     );
   };
