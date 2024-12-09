@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
-import { getRouteEta, getRouteList, getRouteStop, getStop } from "./api/KMB";
+/* eslint-disable @typescript-eslint/no-floating-promises */
+import { useEffect, useState } from "react";
+import { getRouteEta, getRouteList, getRouteStops, getStop } from "./api/KMB";
 import {
   Autocomplete,
   TextField,
@@ -9,70 +10,17 @@ import {
 } from "@mui/material";
 import moment from "moment";
 import "./App.css";
+import { ETA, Route, RouteStop, Stop } from "./models/KMB";
 
 function App() {
-  const [routeList, setRouteList] = useState([]);
-  const [selectedRoute, setSelectedRoute] = useState();
-  const [routeStopList, setRouteStopList] = useState([]);
-  const [selectedRouteStop, setSelectedRouteStop] = useState();
-  const [routeEta, setRouteEta] = useState([]);
-  const [etaResult, setEtaResult] = useState([]);
+  const [routeList, setRouteList] = useState<Route[]>([]);
+  const [selectedRoute, setSelectedRoute] = useState<Route>();
+  const [routeStops, setRouteStops] = useState<Stop[]>([]);
+  const [selectedRouteStop, setSelectedRouteStop] = useState<Stop>();
+  const [routeEta, setRouteEta] = useState<ETA[]>([]);
+  const [etaResult, setEtaResult] = useState<ETA[]>([]);
 
-  const fetchRouteStop = async () => {
-    const newRouteStops = (
-      await getRouteStop(
-        selectedRoute.route,
-        selectedRoute.bound === "I" ? "inbound" : "outbound",
-        selectedRoute.service_type
-      )
-    ).data;
-    await Promise.all(
-      newRouteStops.map(async (el, index) => {
-        const result = (await getStop(el.stop)).data;
-        return { ...result, seq: index };
-      })
-    ).then((list) => {
-      setRouteStopList(list);
-    });
-  };
-
-  const fetchRouteEta = async () => {
-    console.log("getETA");
-    const newRouteEta = (
-      await getRouteEta(selectedRoute.route, selectedRoute.service_type)
-    ).data;
-    setRouteEta(newRouteEta);
-  };
-
-  useEffect(() => {
-    if (selectedRoute) {
-      fetchRouteStop();
-      fetchRouteEta();
-    }
-  }, [selectedRoute]);
-
-  useEffect(() => {
-    const lastStop = localStorage.getItem("lastRouteStop");
-    if (lastStop && routeStopList.length > 0) {
-      setSelectedRouteStop(
-        routeStopList.find((el) => `${el.seq}` === `${lastStop}`) ||
-          routeStopList[0]
-      );
-    } else {
-      setSelectedRouteStop(routeStopList[0]);
-    }
-  }, [routeStopList]);
-
-  useEffect(() => {
-    if (selectedRouteStop && routeEta.length > 0 && selectedRoute) {
-      const stopEta = routeEta.filter(
-        (el) =>
-          el.seq === selectedRouteStop.seq && el.dir === selectedRoute.bound
-      );
-      setEtaResult(stopEta);
-    }
-  }, [routeEta, selectedRoute, selectedRouteStop]);
-
+  // When enter the page, fetch the route list and set the selected route to the first one
   useEffect(() => {
     const init = async () => {
       const newRouteList = (await getRouteList()).data;
@@ -91,16 +39,72 @@ function App() {
     init();
   }, []);
 
+  // when a route is selected, fetch the route stop and route ETA
   useEffect(() => {
-    console.log("selectedRouteStop", selectedRouteStop);
-  }, [selectedRouteStop]);
+    if (selectedRoute) {
+      fetchRouteStop();
+      fetchRouteEta();
+    }
+  }, [selectedRoute]);
+
+  const fetchRouteStop = async () => {
+    if (!selectedRoute) {
+      return;
+    }
+    const newRouteStops = (
+      await getRouteStops(
+        selectedRoute.route,
+        selectedRoute.bound === "I" ? "inbound" : "outbound",
+        selectedRoute.service_type
+      )
+    ).data;
+    await Promise.all(
+      newRouteStops.map(async (el: RouteStop, index: number) => {
+        const result = (await getStop(el.stop)).data;
+        return { ...result, seq: index };
+      })
+    ).then((list) => {
+      setRouteStops(list);
+    });
+  };
+
+  const fetchRouteEta = async () => {
+    if (!selectedRoute) {
+      return;
+    }
+    const newRouteEta = (
+      await getRouteEta(selectedRoute.route, selectedRoute.service_type)
+    ).data;
+    setRouteEta(newRouteEta);
+  };
+
+  // when the
+  useEffect(() => {
+    const lastStop = localStorage.getItem("lastRouteStop");
+    if (lastStop && routeStops.length > 0) {
+      setSelectedRouteStop(
+        routeStops.find((el) => `${el.seq}` === `${lastStop}`) || routeStops[0]
+      );
+    } else {
+      setSelectedRouteStop(routeStops[0]);
+    }
+  }, [routeStops]);
+
+  useEffect(() => {
+    if (selectedRouteStop && routeEta.length > 0 && selectedRoute) {
+      const stopEta = routeEta.filter(
+        (el) =>
+          el.seq === selectedRouteStop.seq && el.dir === selectedRoute.bound
+      );
+      setEtaResult(stopEta);
+    }
+  }, [routeEta, selectedRoute, selectedRouteStop]);
 
   const displayETA = () => {
     return (
       <div>
         {etaResult.length > 0 ? (
           etaResult.map((el) => {
-            console.log(el);
             return (
               <div>
                 {el.eta ? (
@@ -120,7 +124,11 @@ function App() {
         ) : (
           <div>No service at the moment</div>
         )}
-        <Button color="primary" aria-label="refresh" onClick={fetchRouteEta}>
+        <Button
+          color="primary"
+          aria-label="refresh"
+          onClick={() => void fetchRouteEta()}
+        >
           Refresh
         </Button>
       </div>
@@ -134,7 +142,8 @@ function App() {
           <Autocomplete
             disablePortal
             value={selectedRoute}
-            onChange={(event, newValue) => {
+            onChange={(_, newValue) => {
+              if (!newValue) return;
               localStorage.setItem(
                 "lastRoute",
                 `${newValue.route}${newValue.bound}${newValue.service_type}`
@@ -150,16 +159,17 @@ function App() {
             renderInput={(params) => <TextField {...params} label="Route" />}
           />
         )}
-        {routeStopList.length > 0 && selectedRouteStop && (
+        {routeStops.length > 0 && selectedRouteStop && (
           <Autocomplete
             disablePortal
             value={selectedRouteStop}
-            onChange={(event, newValue) => {
+            onChange={(_, newValue) => {
+              if (!newValue) return;
               localStorage.setItem("lastRouteStop", `${newValue.seq}`);
               setSelectedRouteStop(newValue);
             }}
             id="auto-complete stop"
-            options={routeStopList}
+            options={routeStops}
             getOptionLabel={(option) => `${option.seq} - ${option.name_tc}`}
             sx={{ width: "90vw" }}
             renderInput={(params) => <TextField {...params} label="Stop" />}
